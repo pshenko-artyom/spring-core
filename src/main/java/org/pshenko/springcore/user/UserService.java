@@ -7,27 +7,27 @@ import java.util.*;
 
 @Component
 public class UserService {
-    private final Map<Integer, User> users = new HashMap<>();
-    private int nextId;
+    private final Map<Integer, User> users;
+    private int idCounter;
 
-    public User createUser(String login) {
-        if (login == null || login.isBlank()) {
-            throw new BankException("Login cannot be empty");
-        }
-        Optional<User> existingUser = findByLogin(login);
-        if (existingUser.isPresent()) {
-            throw new BankException("User with login \"%s\" already exists".formatted(login));
-        }
-        nextId++;
-        User user = new User(nextId, login, new ArrayList<>());
-        users.put(nextId, user);
+    public UserService() {
+        users = new HashMap<>();
+        idCounter = 0;
+    }
+
+    public User create(String rawLogin) {
+        String login = validateAndTrim(rawLogin);
+        findByLogin(login).ifPresent(user -> {
+            throw new BankException("user with login \"%s\" already exists".formatted(login));
+        });
+        idCounter++;
+        User user = new User(idCounter, login, new ArrayList<>());
+        users.put(idCounter, user);
         return user;
     }
 
-    public Optional<User> findByLogin(String login) {
-        if (login == null || login.isBlank()) {
-            throw new BankException("Login cannot be empty");
-        }
+    public Optional<User> findByLogin(String rawLogin) {
+        String login = validateAndTrim(rawLogin);
         for (User user : users.values()) {
             if (user.getLogin().equals(login)) {
                 return Optional.of(user);
@@ -42,5 +42,12 @@ public class UserService {
 
     public List<User> findAll() {
         return users.values().stream().toList();
+    }
+
+    private String validateAndTrim(String login) {
+        if (login == null || login.isBlank()) {
+            throw new BankException("login cannot be empty");
+        }
+        return login.trim();
     }
 }
